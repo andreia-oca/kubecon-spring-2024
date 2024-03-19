@@ -1,14 +1,47 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import reactLogo from "./assets/react.svg";
-import { BackendService } from "@genezio-sdk/test-genezio";
+import { BackendService, Message } from "@genezio-sdk/genezio-demo";
 import "./App.css";
 
 export default function App() {
   const [name, setName] = useState("");
+  const [message, setMessage] = useState("");
+  const [messages, setMessages] = useState<Message[]>([]);
   const [response, setResponse] = useState("");
 
   async function sayHello() {
     setResponse(await BackendService.hello(name));
+  }
+
+  async function send() {
+    await BackendService.addMessage(message);
+    updateMessages();
+  }
+
+  useEffect(() => {
+    async function fetchMessages() {
+      try {
+        const messages = await BackendService.getMessages(0, true);
+        setMessages(messages || []);
+      } catch (error) {
+        console.error("Error fetching messages:", error);
+      }
+    }
+
+    fetchMessages();
+  }, []);
+
+  useEffect(() => {
+    updateMessages();
+  }, []);
+
+  async function updateMessages() {
+    try {
+      const messages = await BackendService.getMessages(0, true);
+      setMessages(messages || []);
+    } catch (error) {
+      console.error('Error fetching messages:', error);
+    }
   }
 
   return (
@@ -43,6 +76,32 @@ export default function App() {
 
         <button onClick={() => sayHello()}>Say Hello</button>
         <p className="read-the-docs">{response}</p>
+        <br />
+        <br />
+
+        <input
+          type="text"
+          className="input-box"
+          onChange={(e) => setMessage(e.target.value)}
+          placeholder="Add your message here"
+        />
+        <br />
+        <br />
+
+        <button onClick={() => send()}>Send</button>
+
+        <div>
+          <h2>Messages:</h2>
+          <div className="message-container">
+            {messages.map((message) => (
+              <div key={message.id}>
+                <p className="username">
+                  {message.message}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </>
   );
